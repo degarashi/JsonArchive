@@ -1,10 +1,11 @@
 Json Archive
 ===========
-Json Archive(input/output) for boost::serialization
+Json Archive(input/output) for boost::serialization.
 
 ## Build Dependencies
-boost 1.48.0 or newer
-jsoncpp
+* boost 1.48.0 or newer
+* jsoncpp
+* clang (c++14)
 
 ## Build
 ```bash
