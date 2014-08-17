@@ -2,8 +2,19 @@ cmake_minimum_required(VERSION 2.8)
 project(json_archive)
 
 set(CMAKE_CXX_COMPILER clang++)
-set(CMAKE_CXX_FLAGS "-std=c++1y -g -O0")
+set(CMAKE_CXX_FLAGS "-std=c++1y")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 find_package(Boost 1.48.0 REQUIRED)
-add_executable(json_archive test.cpp json_oarchive.cpp json_iarchive.cpp json_archive.cpp)
-target_link_libraries(json_archive  boost_serialization jsoncpp)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
+set(LIB_SRC json_oarchive.cpp json_iarchive.cpp json_archive.cpp)
+add_library(json_archive STATIC ${LIB_SRC})
+install(TARGETS json_archive ARCHIVE DESTINATION lib)
+file(GLOB HEADERS "./*.hpp")
+install(FILES ${HEADERS} DESTINATION include)
+
+add_executable(ja_test test.cpp)
+target_link_libraries(ja_test json_archive boost_serialization jsoncpp)
 
