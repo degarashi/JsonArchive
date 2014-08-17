@@ -3,10 +3,10 @@
 // #include <boost/archive/impl/basic_text_iarchive.ipp>
 #include "json_oarchive.hpp"
 #include "json_iarchive.hpp"
+#include "debugmsg.hpp"
 #include <boost/archive/impl/archive_serializer_map.ipp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/vector.hpp>
-#include <boost/format.hpp>
 
 class Derived;
 class Base {
@@ -28,12 +28,12 @@ class Base {
 		// コンストラクタ引数が必要なクラスのテスト
 		Base(double d, float f): _valueD(d), _valueF(f) {}
 		void print_value() {
-			std::cout << boost::format("valueD=%1%, valueF=%2%") % _valueD % _valueF;
+			DebugMsgLn("valueD=%1%, valueF=%2%", _valueD, _valueF);
 		}
 		virtual void print() {
-			std::cout << "this is Base Class. ";
+			DebugMsgLn("this is Base Class. ");
 			print_value();
-			std::cout << std::endl;
+			DebugMsgLn("");
 		}
 };
 class Derived : public Base {
@@ -51,13 +51,13 @@ class Derived : public Base {
 	public:
 		Derived(int i, double d, float f): Base(d, f), _valueI(i) {}
 		void print_value() {
-			std::cout << boost::format(", valueI=%1%") % _valueI;
+			DebugMsgLn(", valueI=%1%", _valueI);
 		}
 		void print() override {
-			std::cout << "this is Derived Class. ";
+			DebugMsgLn("this is Derived Class. ");
 			Base::print_value();
 			print_value();
-			std::cout << std::endl;
+			DebugMsgLn("");
 		}
 };
 class MyClass {
@@ -92,7 +92,7 @@ class MyClass {
 		void print() {
 			int idx=0;
 			for(auto& p : _ptrBase) {
-				std::cout << idx++ << ": ";
+				DebugMsg("%1%: ", idx++);
 				p->print();
 			}
 			_derived.print();
@@ -106,20 +106,20 @@ namespace boost {
 	namespace serialization {
 		template <class Archive>
 		inline void save_construct_data(Archive& ar, const Derived* v, const unsigned int ver) {
-// 			std::cout << "save_construct(Derived)" << std::endl;
+// 			DebugMsgLn("save_construct(Derived)");
 			ar & boost::serialization::make_nvp("ctor_valueI", v->_valueI)
 				& boost::serialization::make_nvp("ctor_valueD", v->_valueD)
 				& boost::serialization::make_nvp("ctor_valueF", v->_valueF);
 		}
 		template <class Archive>
 		inline void save_construct_data(Archive& ar, const Base* v, const unsigned int ver) {
-// 			std::cout << "save_construct(Base)" << std::endl;
+// 			DebugMsgLn("save_construct(Base)");
 			ar & boost::serialization::make_nvp("ctor_valueD", v->_valueD)
 				& boost::serialization::make_nvp("ctor_valueF", v->_valueF);
 		}
 		template <class Archive>
 		inline void load_construct_data(Archive& ar, Derived* v, const unsigned int ver) {
-// 			std::cout << "load_construct(Derived)" << std::endl;
+// 			DebugMsgLn("load_construct(Derived)");
 			int iv;
 			double dv;
 			float fv;
@@ -130,7 +130,7 @@ namespace boost {
 		}
 		template <class Archive>
 		inline void load_construct_data(Archive& ar, Base* v, const unsigned int ver) {
-// 			std::cout << "load_construct(Base)" << std::endl;
+// 			DebugMsgLn("load_construct(Base)");
 			double dv;
 			float fv;
 			ar & boost::serialization::make_nvp("ctor_valueD", dv)

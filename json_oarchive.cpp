@@ -1,34 +1,81 @@
 #include "json_oarchive.hpp"
 
-json_oarchive::json_oarchive(): _stack(_root) {
+json_oarchive::json_oarchive():
+	_stack(_root),
+	_arrayLevel(0)
+{
 	_clearIds();
 }
+namespace {
+	auto fnWrite = [](Json::Value& jv, const Json::Value& v) {
+		auto typ = jv.type();
+		if(typ == Json::nullValue)
+			jv = v;
+		else if(typ == Json::arrayValue)
+			jv.append(v);
+		else {
+			Json::Value tmp;
+			tmp.swap(jv);
+			jv.append(tmp);
+			jv.append(v);
+		}
+	};
+}
 void json_oarchive::_save(const char* s) {
-	_stack.getEnt() = s;
+	fnWrite(_stack.getEnt(), Json::Value(s));
 }
 void json_oarchive::_save(double v) {
-	_stack.getEnt() = v;
+	fnWrite(_stack.getEnt(), Json::Value(v));
 }
 void json_oarchive::_save(long v) {
-	_stack.getEnt() = Json::LargestInt(v);
+	fnWrite(_stack.getEnt(), Json::LargestInt(v));
 }
 void json_oarchive::_save(bool b) {
-	_stack.getEnt() = Json::Value(b);
+	fnWrite(_stack.getEnt(), Json::Value(b));
 }
 void json_oarchive::_save(std::nullptr_t) {
-	_stack.getEnt() = Json::Value();
+	fnWrite(_stack.getEnt(), Json::Value());
 }
 void json_oarchive::_save(const std::string& s) {
-	_stack.getEnt() = s;
+	fnWrite(_stack.getEnt(), Json::Value(s));
 }
 void json_oarchive::save_start(const char* name) {
 	_stack.pushEnt(name);
+
+	auto& bk = _stack.getEnt();
+	auto sz = _arrayStack.size();
+	if(sz < ++_arrayLevel) {
+		assert(sz == _arrayLevel-1);
+		_arrayStack.emplace_back(name,false);
+		bk = Json::Value();
+	} else {
+		assert(sz == _arrayLevel);
+		if(_arrayStack.back().first != name) {
+			// エントリの上書き
+			_arrayStack.back().first = name;
+			bk = Json::Value();
+		} else {
+			// 同じ名前で再度書き込んだ場合は配列として扱う
+			if(bk.type() != Json::arrayValue) {
+				_arrayStack.back().second = true;
+
+				Json::Value tmp;
+				tmp.swap(bk);
+				bk.append(tmp);
+			}
+			_stack.pushEnt(bk.size());
+		}
+	}
 }
 void json_oarchive::save_end(const char* name) {
 	_stack.popEnt();
+	if(_arrayStack[--_arrayLevel].second)
+		_stack.popEnt();
+	_arrayStack.resize(_arrayLevel + 1);
 }
 void json_oarchive::array_item(int n) {
 	_stack.pushEnt(n);
+	_arrayStack.resize(_arrayLevel);
 }
 void json_oarchive::array_end() {
 	_stack.popEnt();

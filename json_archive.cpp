@@ -1,7 +1,9 @@
 #include "json_archive.hpp"
+#include "debugmsg.hpp"
 
 const std::string cs_ClassNameType("class_name"),
 					cs_VersionType("version"),
+					cs_ItemVersionType("item_version"),
 					cs_ObjectIdType("object_id"),
 					cs_ObjectReferenceType("object_ref"),
 					cs_ClassIdType("class_id"),
@@ -22,26 +24,27 @@ void base_json_archive::pushClassRepository() {
 	pushEnt(cs_ClassRepository.c_str());
 }
 void base_json_archive::pushObjRepository(uint32_t clsId, uint32_t objId) {
-// 	std::cout << "PUSH: clsId=" << clsId << " objId=" << objId << std::endl;
+	DebugMsgLn("PUSH: clsId=%1%, objId=%2%", clsId, objId);
 	_mark.push_back(_stack.size());
 	_stack.push_back(_objRep);
 	pushEnt(std::to_string(clsId).c_str());
 	pushEnt(std::to_string(objId).c_str());
 }
 void base_json_archive::popToMark() {
+	DebugMsgLn("POP: toMark");
 	_stack.resize(_mark.back());
+	_test.resize(_mark.back()-1);
 	_mark.pop_back();
 }
 
-// #include <iostream>
 void base_json_archive::pushEnt(const char* name) {
 	_test.push_back(name);
-// 	std::cout << "PUSH: " << name << std::endl;
+	DebugMsgLn("PUSH: %1%", name);
 	_stack.push_back(&getEnt()[name]);
 }
 void base_json_archive::pushEnt(int n) {
 	_test.push_back(std::to_string(n));
-// 	std::cout << "PUSH: " << n << std::endl;
+	DebugMsgLn("PUSH: %1%", n);
 	auto& target = getEnt();
 	if(!target.isArray())
 		target = Json::Value();
@@ -49,7 +52,7 @@ void base_json_archive::pushEnt(int n) {
 }
 void base_json_archive::popEnt() {
 	_stack.pop_back();
-// 	std::cout << "POP: " << _test.back() << std::endl;
+	DebugMsgLn("POP: %1%", _test.back());
 	_test.pop_back();
 }
 const Json::Value& base_json_archive::getEnt() const {

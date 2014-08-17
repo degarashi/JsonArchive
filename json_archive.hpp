@@ -6,6 +6,7 @@
 extern void* Enabler;
 extern const std::string cs_ClassNameType,
 							cs_VersionType,
+							cs_ItemVersionType,
 							cs_ObjectIdType,
 							cs_ObjectReferenceType,
 							cs_ClassIdType,

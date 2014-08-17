@@ -14,6 +14,10 @@ class json_oarchive : public boost::archive::detail::common_oarchive<json_oarchi
 							_objectId;
 		ClassIDType			_classType;
 		ObjectIDType		_objectType;
+		// 同じキー名を連続アクセスした時は配列とみなす
+		using StrVec = std::vector<std::pair<std::string,bool>>;
+		StrVec				_arrayStack;
+		int					_arrayLevel;
 
 		void _clearIds() {
 			_classId = _objectId = boost::none;
@@ -32,6 +36,7 @@ class json_oarchive : public boost::archive::detail::common_oarchive<json_oarchi
 		static const std::string& _ConvType(const std::string& t);
 		static bool _ConvType(bool t);
 		static std::nullptr_t _ConvType(std::nullptr_t);
+		static long _ConvType(boost::serialization::item_version_type);
 		// 2. floatingpoint
 		template <class T,
 				  std::enable_if_t<std::is_floating_point<T>::value>*& = Enabler>
@@ -65,6 +70,7 @@ class json_oarchive : public boost::archive::detail::common_oarchive<json_oarchi
 		void _save(long v);
 		void _save(bool b);
 		void _save(std::nullptr_t);
+		void _save(const boost::serialization::item_version_type&);
 
 		void save_start(const char* name);
 		void save_end(const char* name);
@@ -87,7 +93,8 @@ class json_oarchive : public boost::archive::detail::common_oarchive<json_oarchi
 		void save_override(const boost::serialization::nvp<T>& t, int) {
 			if(_classId && _classType != ClassIDType::Reference) {
 				// ClassInfo書き込み
-				_classMap.emplace(*_classId, _classInfo);
+				if(_classMap.count(*_classId) == 0)
+					_classMap[*_classId] = _classInfo;
 				_classInfo.clear();
 			}
 			if(!t.name()) {

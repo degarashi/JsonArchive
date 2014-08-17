@@ -13,29 +13,38 @@ class json_iarchive : public boost::archive::detail::common_iarchive<json_iarchi
 		ClassIDType			_classType;
 		ObjectIDType		_objectType;
 		ClassMap			_classMap;
+		// 同じキー名を連続アクセスした時は配列とみなす
+		struct AItem {
+			std::string	key;
+			int			index;
+			bool		popFlag;
+		};
+		using ArrayVec = std::vector<AItem>;
+		ArrayVec			_arrayStack;
+		int					_arrayLevel;
 
 		void _clearIds();
 		void _loadClassMap();
+		Json::Value& _getEntry();
 
 		friend class boost::archive::load_access;
 		friend class boost::archive::detail::interface_iarchive<json_iarchive>;
 		using base_t = boost::archive::detail::common_iarchive<json_iarchive>;
 
 		// 1. direct
-		void load(std::string& s) {
-			s = _stack.getEnt().asString();
-		}
+		void load(std::string& s);
+		void load(boost::serialization::item_version_type& v);
 		// 2. floatingpoint
 		template <class T,
 					std::enable_if_t<std::is_floating_point<T>::value>*& = Enabler>
 		void load(T& t) {
-			t = _stack.getEnt().asDouble();
+			t = _getEntry().asDouble();
 		}
 		// 3. integral
 		template <class T,
 					std::enable_if_t<std::is_integral<T>::value>*& = Enabler>
 		void load(T& t) {
-			t = _stack.getEnt().asLargestInt();
+			t = _getEntry().asLargestInt();
 		}
 		// 4. convertible to long
 		template <class T,
@@ -43,7 +52,7 @@ class json_iarchive : public boost::archive::detail::common_iarchive<json_iarchi
 				std::enable_if_t<!std::is_floating_point<T>::value>*& = Enabler,
 				std::enable_if_t<std::is_convertible<T,long>::value>*& = Enabler>
 		void load(T& t) {
-			t = _stack.getEnt().asLargestInt();
+			t = _getEntry().asLargestInt();
 		}
 
 		// load primitive
@@ -97,12 +106,8 @@ class json_iarchive : public boost::archive::detail::common_iarchive<json_iarchi
 		}
 
 		// 配列のサイズはJSONが持っているので別途["count"]に記録していない
-		void load_override(boost::serialization::collection_size_type& t, int) {
-			t = boost::serialization::collection_size_type(_stack.getEnt().size());
-		}
-		void load_override(boost::serialization::nvp<boost::serialization::collection_size_type> const& t, int) {
-			load_override(t.value(), 0);
-		}
+		void load_override(boost::serialization::collection_size_type& t, int);
+		void load_override(boost::serialization::nvp<boost::serialization::collection_size_type> const& t, int);
 
 		// JSONのArrayから読み込む
 		template <class T>
